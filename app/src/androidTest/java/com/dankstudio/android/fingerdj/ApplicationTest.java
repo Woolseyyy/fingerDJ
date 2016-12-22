@@ -1,4 +1,4 @@
-package com.dankstudio.www.fingerdj;
+package com.dankstudio.android.fingerdj;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;
