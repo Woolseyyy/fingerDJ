@@ -66,8 +66,8 @@ public class MainActivity extends AppCompatActivity {
     private ImageButton setEffectSound3;//音乐特效3
     private ImageButton setEffectSound4;//音乐特效4
     private ImageView musicPlayer;
-    private SeekBar seekBar_mainVolume;
-    private SeekBar seekBar_backVolume;
+    private VerticalSeekBar seekBar_mainVolume;
+    private VerticalSeekBar seekBar_backVolume;
     private SeekBar seekBar_track;
     ObjectAnimator discAnimation;
     boolean isplaying =true;
@@ -92,15 +92,15 @@ public class MainActivity extends AppCompatActivity {
         setBackMusic = (ImageButton) findViewById(R.id.setBackMusicBtn);
         musicPlay = (ImageButton) findViewById(R.id.play);
         musicPause = (ImageButton) findViewById(R.id.pause);
-        addRecord = (ImageButton) findViewById(R.id.addrecord);
+        addRecord = (ImageButton) findViewById(R.id.addRecord);
         backRecord = (ImageButton) findViewById(R.id.backRecord);
         setEffectSound1 = (ImageButton) findViewById(R.id.setEffectSound1);
         setEffectSound2 = (ImageButton) findViewById(R.id.setEffectSound2);
         setEffectSound3 = (ImageButton) findViewById(R.id.setEffectSound3);
         setEffectSound4 = (ImageButton) findViewById(R.id.setEffectSound4);
         musicPlayer = (ImageView) findViewById(R.id.musicplayer);
-        seekBar_mainVolume = (SeekBar) findViewById(R.id.SeekBar_mainVolume);
-        seekBar_backVolume = (SeekBar) findViewById(R.id.SeekBar_backVolume);
+        seekBar_mainVolume = (VerticalSeekBar) findViewById(R.id.SeekBar_mainVolume);
+        seekBar_backVolume = (VerticalSeekBar) findViewById(R.id.SeekBar_backVolume);
         seekBar_track = (SeekBar) findViewById(R.id.SeekBar_track);
         mixStart = (ImageButton) findViewById(R.id.start);
         mixStop = (ImageButton) findViewById(R.id.stop);
