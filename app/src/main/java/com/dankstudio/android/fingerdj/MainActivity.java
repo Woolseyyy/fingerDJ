@@ -19,6 +19,12 @@ import android.view.animation.RotateAnimation;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
+import com.github.angads25.filepicker.controller.DialogSelectionListener;
+import com.github.angads25.filepicker.model.DialogConfigs;
+import com.github.angads25.filepicker.model.DialogProperties;
+import com.github.angads25.filepicker.view.FilePickerDialog;
+
+import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
     //final variable
@@ -107,10 +113,29 @@ public class MainActivity extends AppCompatActivity {
         setMainMusic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("audio/*");
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                startActivityForResult(intent, PICK_MAIN_MUSIC_REQUEST);
+
+                DialogProperties properties=new DialogProperties();
+
+                //properties
+                properties.selection_mode= DialogConfigs.SINGLE_MODE;
+                properties.selection_type=DialogConfigs.FILE_SELECT;
+                properties.root=new File(DialogConfigs.DEFAULT_DIR);
+                properties.error_dir=new File(DialogConfigs.DEFAULT_DIR);
+                properties.extensions=null;
+
+                FilePickerDialog dialog = new FilePickerDialog(MainActivity.this,properties);
+                dialog.setTitle("Select a wav file as main music");
+
+                dialog.setDialogSelectionListener(new DialogSelectionListener() {
+                    @Override
+                    public void onSelectedFilePaths(String[] files) {
+                        //files is the array of the paths of files selected by the Application User.
+                        //set main music
+                        musicService.setMainMusic(files[0]);
+                    }
+                });
+
+                dialog.show();
             }
         });
 
@@ -118,10 +143,28 @@ public class MainActivity extends AppCompatActivity {
         setBackMusic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("audio/*");
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                startActivityForResult(intent, PICK_BACK_MUSIC_REQUEST);
+                DialogProperties properties=new DialogProperties();
+
+                //properties
+                properties.selection_mode= DialogConfigs.SINGLE_MODE;
+                properties.selection_type=DialogConfigs.FILE_SELECT;
+                properties.root=new File(DialogConfigs.DEFAULT_DIR);
+                properties.error_dir=new File(DialogConfigs.DEFAULT_DIR);
+                properties.extensions=null;
+
+                FilePickerDialog dialog = new FilePickerDialog(MainActivity.this,properties);
+                dialog.setTitle("Select a wav file as back music");
+
+                dialog.setDialogSelectionListener(new DialogSelectionListener() {
+                    @Override
+                    public void onSelectedFilePaths(String[] files) {
+                        //files is the array of the paths of files selected by the Application User.
+                        //set main music
+                        musicService.setBackMusic(files[0]);
+                    }
+                });
+
+                dialog.show();
             }
         });
 
@@ -279,31 +322,6 @@ public class MainActivity extends AppCompatActivity {
                 //donothing
             }
         });
-
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        // receive the data of main music files picker intent
-        if( requestCode == PICK_MAIN_MUSIC_REQUEST){
-            //if backRecord or error then do not continue
-            if (resultCode == Activity.RESULT_OK) {
-                Uri uri = data.getData(); //the file`s uri
-                //musicService.setMainMusic(uri);
-                String path = FileUtils.getPath(this, uri);
-                Log.d("hint", path);
-            }
-        }
-        // receive the data of main music files picker intent
-        else if( requestCode == PICK_BACK_MUSIC_REQUEST){
-            //if backRecord or error then do not continue
-            if (resultCode == Activity.RESULT_OK) {
-                Uri uri = data.getData(); //the file`s uri
-                //musicService.setBackMusic(uri);
-                String path = FileUtils.getPath(this, uri);
-                Log.d("hint", path);
-            }
-        }
 
     }
 

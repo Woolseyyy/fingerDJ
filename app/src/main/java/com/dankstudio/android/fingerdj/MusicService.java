@@ -38,15 +38,13 @@ public class MusicService extends Service {
         super.onCreate();
     }
 
-    void setMainMusic(Uri fileUri){
-        File music = new File(fileUri.getPath());
-        //File music = new File(FileUtils.getPath(this, fileUri));
+    void setMainMusic(String filePath){
+        File music = new File(filePath);
         audioHandler.setMainMusic(music);
     }
 
-    void setBackMusic(Uri fileUri){
-        File music = new File(fileUri.getPath());
-        //File music = new File(FileUtils.getPath(this, fileUri));
+    void setBackMusic(String filePath){
+        File music = new File(filePath);
         audioHandler.setBackMusic(music);
     }
 
