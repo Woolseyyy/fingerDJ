@@ -6,11 +6,9 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -21,11 +19,6 @@ import android.view.animation.RotateAnimation;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
-import android.widget.Toast;
-
-import java.io.File;
-
-import static android.R.attr.animation;
 
 public class MainActivity extends AppCompatActivity {
     //final variable
@@ -59,7 +52,9 @@ public class MainActivity extends AppCompatActivity {
     private ImageButton musicPlay;//播放音乐
     private ImageButton musicPause;//音乐暂停
     private ImageButton addRecord;//添加音乐节点
-    private ImageButton back;//返回音乐节点
+    private ImageButton mixStart;//开始混合
+    private ImageButton mixStop;//结束混合
+    private ImageButton backRecord;//返回音乐节点
     private ImageButton setEffectSound1;//音乐特效1
     private ImageButton setEffectSound2;//音乐特效2
     private ImageButton setEffectSound3;//音乐特效3
@@ -92,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
         musicPlay = (ImageButton) findViewById(R.id.play);
         musicPause = (ImageButton) findViewById(R.id.pause);
         addRecord = (ImageButton) findViewById(R.id.addrecord);
-        back = (ImageButton) findViewById(R.id.back);
+        backRecord = (ImageButton) findViewById(R.id.backRecord);
         setEffectSound1 = (ImageButton) findViewById(R.id.setEffectSound1);
         setEffectSound2 = (ImageButton) findViewById(R.id.setEffectSound2);
         setEffectSound3 = (ImageButton) findViewById(R.id.setEffectSound3);
@@ -101,6 +96,8 @@ public class MainActivity extends AppCompatActivity {
         seekBar_mainVolume = (SeekBar) findViewById(R.id.SeekBar_mainVolume);
         seekBar_backVolume = (SeekBar) findViewById(R.id.SeekBar_backVolume);
         seekBar_track = (SeekBar) findViewById(R.id.SeekBar_track);
+        mixStart = (ImageButton) findViewById(R.id.start);
+        mixStop = (ImageButton) findViewById(R.id.stop);
         animation.setDuration(30000);// 设置动画持续时间
     }
 
@@ -128,18 +125,54 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        musicPlay.setOnClickListener(new View.OnClickListener() {
-
+        //start music mix
+        mixStart.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                //点击播放按键时，播放键不显示，显示暂停键
+                //UI
+                mixStop.setVisibility(View.VISIBLE);
+                mixStart.setVisibility(View.GONE);
+
+                //start the music
+                musicService.start();
+
+                //change the button of play/pause
                 musicPause.setVisibility(View.VISIBLE);
                 musicPlay.setVisibility(View.GONE);
                 musicPlayer.setAnimation(animation);
                 animation.startNow();
+            }
+        });
+
+        //stop music mix
+        mixStop.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                mixStart.setVisibility(View.VISIBLE);
+                mixStop.setVisibility(View.GONE);
 
                 //start the music
-                musicService.start();
+                musicService.stop();
+
+                //change the button play/pause
+                musicPlay.setVisibility(View.VISIBLE);
+                musicPause.setVisibility(View.GONE);
+                animation.cancel();
+            }
+        });
+
+        musicPlay.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                if(musicService.mainMusicPlay()){//play
+                    //点击播放按键时，播放键不显示，显示暂停键
+                    musicPause.setVisibility(View.VISIBLE);
+                    musicPlay.setVisibility(View.GONE);
+                    musicPlayer.setAnimation(animation);
+                    animation.startNow();
+                }
             }
         });
 
@@ -147,17 +180,105 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onClick(View v) {
-                //点击播放按键时，暂停键不显示，显示播放键
-                musicPlay.setVisibility(View.VISIBLE);
-                musicPause.setVisibility(View.GONE);
-                animation.cancel();
 
-                //pause
-                musicService.mainMusicPause();
+                if(musicService.mainMusicPause()){//pause
+                    //点击播放按键时，暂停键不显示，显示播放键
+                    musicPlay.setVisibility(View.VISIBLE);
+                    musicPause.setVisibility(View.GONE);
+                    animation.cancel();
+                }
             }
         });
 
+        addRecord.setOnClickListener(new View.OnClickListener(){
 
+            @Override
+            public void onClick(View view) {
+                //record a position
+                musicService.addRecord();
+            }
+        });
+
+        backRecord.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                //back to position
+                musicService.backRecord();
+            }
+        });
+
+        setEffectSound1.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                //set Effect
+                musicService.setEffectSound(1);
+            }
+        });
+
+        setEffectSound2.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                //set Effect
+                musicService.setEffectSound(2);
+            }
+        });
+
+        setEffectSound3.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                //set Effect
+                musicService.setEffectSound(3);
+            }
+        });
+
+        setEffectSound4.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                //set Effect
+                musicService.setEffectSound(4);
+            }
+        });
+
+        seekBar_backVolume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                musicService.setBackVolume(i, seekBar.getMax());
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                //do nothing
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                //donothing
+            }
+        });
+
+        seekBar_mainVolume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                musicService.setMainVolume(i, seekBar.getMax());
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                //do nothing
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                //donothing
+            }
+        });
 
     }
 
@@ -165,18 +286,22 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // receive the data of main music files picker intent
         if( requestCode == PICK_MAIN_MUSIC_REQUEST){
-            //if back or error then do not continue
+            //if backRecord or error then do not continue
             if (resultCode == Activity.RESULT_OK) {
                 Uri uri = data.getData(); //the file`s uri
-                musicService.setMainMusic(uri);
+                //musicService.setMainMusic(uri);
+                String path = FileUtils.getPath(this, uri);
+                Log.d("hint", path);
             }
         }
         // receive the data of main music files picker intent
         else if( requestCode == PICK_BACK_MUSIC_REQUEST){
-            //if back or error then do not continue
+            //if backRecord or error then do not continue
             if (resultCode == Activity.RESULT_OK) {
                 Uri uri = data.getData(); //the file`s uri
-                musicService.setBackMusic(uri);
+                //musicService.setBackMusic(uri);
+                String path = FileUtils.getPath(this, uri);
+                Log.d("hint", path);
             }
         }
 

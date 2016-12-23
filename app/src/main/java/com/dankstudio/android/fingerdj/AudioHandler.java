@@ -4,35 +4,44 @@ package com.dankstudio.android.fingerdj;
  * Created by admin on 2016/12/22.
  */
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 
+import android.content.res.AssetFileDescriptor;
+import android.content.res.Resources;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Environment;
 
 public class AudioHandler {
-    private final int EFFECT_NUM = 3;
+    private final int NO_EFFECT = -1;
+    public final int EFFECT_NUM = 5;
+    public final float MAX_VOLUME = 1;
 
     //media data
-    //private File mainMusicFile = null;
-    //private File backMusicFile = null;
-    private File mainMusicFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/netease/cloudmusic/Music/1.wav");
-    private File backMusicFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/netease/cloudmusic/Music/2.wav");
-    private File[] effectSoundFile = new File[EFFECT_NUM];
+    private File mainMusicFile = null;
+    private File backMusicFile = null;
+    //private File mainMusicFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/netease/cloudmusic/Music/1.wav");
+    //private File backMusicFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/netease/cloudmusic/Music/2.wav");
+    private int effectResourceIDs[] = {R.raw.rub1, R.raw.drum, R.raw.check_it_out, R.raw.gong, R.raw.yeah1};
+    private Resources res;
+    private InputStream[] effectFile = null;
 
     //control signal
     private boolean run = false;
     private boolean mainMusicPlaying = false;
     private boolean backMusicPlaying = false;
-    private int effectNumber = -1;
-    private float mainMusicVolum = 1;
-    private float backMusicVolum = 1;
+    private int effectNumber = NO_EFFECT;
+    private float mainMusicVolume = MAX_VOLUME;
+    private float backMusicVolume = MAX_VOLUME;
     private long position = 44;
-    private long positionRecord = 44;
+
+    //init
+    public AudioHandler(Resources res){
+
+        this.res = res;
+
+    }
 
     //control interface
     //start audio
@@ -72,7 +81,7 @@ public class AudioHandler {
         run = false;
         mainMusicPlaying = false;
         backMusicPlaying = false;
-        effectNumber = -1;
+        effectNumber = NO_EFFECT;
     }
 
     public void mainMusicPause(){
@@ -92,15 +101,27 @@ public class AudioHandler {
     }
 
     public void setEffectSound(int num){
-        effectNumber = num;
+        if(num>-1 && num<EFFECT_NUM){
+
+            if(effectNumber != NO_EFFECT){
+                try {//reset the before effect
+                    effectFile[effectNumber] = res.openRawResourceFd(effectResourceIDs[effectNumber]).createInputStream();
+                    effectFile[effectNumber].skip(44);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            effectNumber = num;
+        }
     }
 
-    public void setMainMusicVolum(int volum){
-        mainMusicVolum = volum;
+    public void setMainMusicVolume(float volume){
+        mainMusicVolume = volume;
     }
 
-    public void setBackMusicVolum(int volum){
-        backMusicVolum = volum;
+    public void setBackMusicVolume(float volume){
+        backMusicVolume = volume;
     }
 
     public void setPosition(long pos){
@@ -111,13 +132,7 @@ public class AudioHandler {
         return position;
     }
 
-    public void markPosition(long pos){
-        positionRecord = pos;
-    }
-
-    public void backToPosition(){
-        position = positionRecord;
-    }
+    public boolean getState() { return run; }
 
     //thread to play media
     private class PlayThread extends Thread{
@@ -134,7 +149,6 @@ public class AudioHandler {
             //file reader
             RandomAccessFile mainFile = null;
             RandomAccessFile backFile = null;
-            RandomAccessFile[] effectFile = null;
 
             //buffer to read file
             byte[] mainBuffer = new byte[512];//temple 512
@@ -148,14 +162,18 @@ public class AudioHandler {
                 //file access initialize
                 mainFile = new RandomAccessFile(mainMusicFile, "rw");
                 backFile = new RandomAccessFile(backMusicFile, "rw");
-                /*effectFile = new RandomAccessFile[EFFECT_NUM];
-                for(int i=0; i<EFFECT_NUM; i++){
-                    effectFile[i] = new RandomAccessFile(effectSoundFile[i], "rw");
-                }*/
+                effectFile = new InputStream[EFFECT_NUM];
+                for(int num=0; num<EFFECT_NUM; num++){
+                    effectFile[num] = res.openRawResourceFd(effectResourceIDs[num]).createInputStream();
+                }
 
                 //start
                 mainFile.seek(44);//skip the head of PCM
                 backFile.seek(44);//skip the head of PCM
+                //mark the head of the PCM
+                for (InputStream soundInput : effectFile) {
+                    soundInput.skip(44);
+                }
 
                 while(run){
 
@@ -183,23 +201,22 @@ public class AudioHandler {
                         if(effectNumber>-1 && effectNumber<EFFECT_NUM){
                             if(effectFile[effectNumber].read(effectBuffer) == -1)//the effect sound has played over
                             {
-                                effectNumber = -1;
-                                effectFile[effectNumber].seek(44);
+
+                                effectFile[effectNumber] = res.openRawResourceFd(effectResourceIDs[effectNumber]).createInputStream();
+                                effectFile[effectNumber].skip(44);
+                                effectNumber = NO_EFFECT;//set effect number default
                             }
                         }
                     }
-                    catch (IOException e4){
+                    catch (IOException | NullPointerException e4){
                         e4.printStackTrace();
-                    }
-                    catch (NullPointerException e5){
-                        e5.printStackTrace();
-                    }
-                    finally{
+                        effectNumber = NO_EFFECT;//set effect number default
+                    } finally{
 
                         //volum handle
                         for(int i=0; i<512; i++){
-                            mainBuffer[i] *= mainMusicVolum;
-                            backBuffer[i] *= backMusicVolum;
+                            mainBuffer[i] *= mainMusicVolume;
+                            backBuffer[i] *= backMusicVolume;
                         }
 
                         //mix
@@ -210,15 +227,10 @@ public class AudioHandler {
                         audioTrack.write(mixBuffer, 0, mixBuffer.length);
                     }
                 }
-            }
-            catch (FileNotFoundException e1) {
-                e1.printStackTrace();
-            }
-            catch (SecurityException e2) {
+                mainFile.close();
+                backFile.close();
+            } catch (SecurityException | IOException e2) {
                 e2.printStackTrace();
-            }
-            catch (IOException e3){
-                e3.printStackTrace();
             }
         }
 
